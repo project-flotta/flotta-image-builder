@@ -1,0 +1,9 @@
+name = "${IMAGE_NAME}"
+description = "RHEL for Edge"
+version = "0.0.1"
+modules = []
+groups = []
+
+[[packages]]
+name = "util-linux"
+version = "*"
