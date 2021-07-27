@@ -1,0 +1,14 @@
+[Unit]
+Description=k4e-agent
+Requires=podman.socket
+After=podman.socket
+StartLimitIntervalSec=0
+
+[Service]
+Type=exec
+KillMode=process
+ExecStart=bash -c "yggd --log-level trace --transport http --cert-file /etc/pki/consumer/cert.pem --key-file /etc/pki/consumer/key.pem --client-id-source machine-id --http-server `cat /etc/agenturl`"
+
+[Install]
+WantedBy=multi-user.target
+
