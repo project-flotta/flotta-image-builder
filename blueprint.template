@@ -7,3 +7,7 @@ groups = []
 [[packages]]
 name = "util-linux"
 version = "*"
+[[packages]]
+name = "k4e-agent"
+version = "*"
+
