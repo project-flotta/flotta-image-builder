@@ -1,2 +1,2 @@
 #!/bin/bash
-rpmbuild -bb --define "_topdir ." --buildroot=rpmfiles --noclean spec
+rpmbuild -bb --define "_topdir $PWD" --buildroot=$PWD/rpmfiles --noclean spec
