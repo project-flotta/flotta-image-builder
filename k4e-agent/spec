@@ -1,20 +1,20 @@
-%define name            k4e-agent
-%define release        1
-%define version     1.0
+%define name k4e-agent
+%define release 1
+%define version 1.0
 %define _build_id_links none
 
-BuildRoot:    %{buildroot}
-Summary:         Agent application for the K4E solution
-License:         GPL
-Name:             %{name}
-Version:         %{version}
-Release:         %{release}
-Source:         %{name}‑%{version}.tar.gz
-Group:             K4E
+BuildRoot: %{buildroot}
+Summary: Agent application for the K4E (Kubernetes for Edge) solution
+License: GPL
+Name: %{name}
+Version: %{version}
+Release: %{release}
+Source: %{name}‑%{version}.tar.gz
+Group: K4E
 Requires: podman
 
 %description
-The K4E agent communicates with the K4E control plane. It reports the status of the appliance and of the running PODs/containers. Agent is responsible for strating and stopping PODs that are based on commands from the control plane.
+The K4E agent communicates with the K4E control plane. It reports the status of the appliance and of the running PODs/containers. Agent is responsible for starting and stopping PODs that are based on commands from the control plane.
 
 %files
 %defattr(755,root,root)
