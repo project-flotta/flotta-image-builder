@@ -18,7 +18,7 @@ The K4E agent communicates with the K4E control plane. It reports the status of 
 
 %files
 %defattr(755,root,root)
-/usr/local/libexec/yggdrasil/device-worker
+/usr/share/libexec/yggdrasil/device-worker
 /usr/bin/yggd
 %dir /etc/pki/consumer
 /usr/lib/systemd/system/k4e-agent.service
@@ -26,6 +26,9 @@ The K4E agent communicates with the K4E control plane. It reports the status of 
 %post
 if [ $1 == 1 ]; then
 	openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/pki/consumer/cert.pem -keyout /etc/pki/consumer/key.pem -subj /CN=k4e-agent
-	systemctl enable --now k4e-agent.service
 fi
+
+systemctl enable --now podman.socket
+systemctl enable --now nftables.service
+systemctl enable --now k4e-agent.service
 

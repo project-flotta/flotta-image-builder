@@ -1,7 +1,7 @@
 [Unit]
 Description=k4e-agent
-Requires=podman.socket
-After=podman.socket
+Requires=podman.socket nftables.service
+After=podman.socket nftables.service
 StartLimitIntervalSec=0
 
 [Service]
