@@ -11,5 +11,15 @@ user --name=core --groups=wheel --password=edge
 services --enabled=ostree-remount
 ostreesetup --nogpg --url=${REPO_URL} --osname=rhel --remote=edge --ref=rhel/8/x86_64/edge
 %post
-echo ${AGENT_URL} > /etc/agenturl
+cat <<EOF > /etc/yggdrasil/config.toml
+log-level = "error"
+cert-file = "/etc/pki/consumer/cert.pem"
+key-file = "/etc/pki/consumer/key.pem"
+transport = "http"
+client-id-source = "machine-id"
+http-server = "${AGENT_URL}"
+EOF
+mkdir -p /etc/pki/consumer
+openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/pki/consumer/cert.pem -keyout /etc/pki/consumer/key.pem -subj /CN=k4e-agent
+systemctl enable --now yggdrasild.service
 %end
