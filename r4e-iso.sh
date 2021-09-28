@@ -5,7 +5,7 @@
 #   - ostree image
 #   - kickstart file (ISO already points to it)
 # input:
-#  - ip or hostname used for connecting to the local web server
+#  - ip or hostname with port if different than 80 used for connecting to the local web server
 #  - a name for the image. allows using different ISO and ostree image for different types of edge devices
 #  - URL for connecting to the server that monitors edge devices
 #  - path to boot ISO file
@@ -13,7 +13,7 @@
 set -e
 Usage() {
     echo "Usage:"
-    echo `basename $0` "<image-server-host> <image-name> <agent-server-url> <path-to-boot-iso>"
+    echo `basename $0` "<image-server-address> <image-name> <agent-server-url> <path-to-boot-iso>"
 }
 
 # check usage
@@ -30,7 +30,7 @@ export AGENT_URL=$3
 BOOT_ISO=$4
 
 # prepare local variables
-IMAGE_BASE_URL=http://$IMAGE_HOST:80/$IMAGE_NAME
+IMAGE_BASE_URL=http://$IMAGE_HOST/$IMAGE_NAME
 BLUEPRINT_TEMPLATE=blueprint.template
 BLUEPRINT_FILE=blueprint.toml
 KICKSTART_TEMPLATE=ks.cfg.template
