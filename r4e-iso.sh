@@ -66,7 +66,7 @@ fi
 # extract image to web server folder
 echo "saving image to web folder"
 composer-cli compose image $BUILD_ID
-sudo mkdir /var/www/html/$IMAGE_NAME
+sudo mkdir $IMAGE_FOLDER
 sudo tar -xvf $BUILD_ID-commit.tar -C $IMAGE_FOLDER
 rm -f $BUILD_ID-commit.tar
 
@@ -85,8 +85,7 @@ sudo umount $ISO_MNT
 rm -rf $ISO_MNT
 sudo chown -R $USER:$GROUPS $ISO_DIR
 chmod -R 777 $ISO_DIR
-KICKSTART_URL_ESCAPED=$(echo $KICKSTART_URL | sed 's/\//\\\//g')
-sed -i "s/append initrd=initrd\.img/append initrd=initrd.img inst.ks=$KICKSTART_URL_ESCAPED/" $ISO_DIR/isolinux/isolinux.cfg
+sed -i "s#append initrd=initrd.img#append initrd=initrd.img inst.ks=$KICKSTART_URL#" $ISO_DIR/isolinux/isolinux.cfg
 
 # create new ISO file
 echo "create $ISO_FILE from $ISO_DIR"
