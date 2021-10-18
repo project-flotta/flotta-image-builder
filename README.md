@@ -9,7 +9,7 @@
     ```
 - clone or download this repository to the RHEL host
 - [download](https://access.redhat.com/downloads/content/479/ver=/rhel---8/8.4/x86_64/product-software) RHEL boot ISO to root folder of the repository
-- make sure there is yum repo availabe with [yggdrasil](https://github.com/jakub-dzon/yggdrasil) and [device-worker](https://github.com/jakub-dzon/k4e-device-worker/)
+- make sure there is yum repo available with [yggdrasil](https://github.com/jakub-dzon/yggdrasil) and [device-worker](https://github.com/jakub-dzon/k4e-device-worker/)
 - create repo.toml pointing to above repo
     ```
     id = "agent"
