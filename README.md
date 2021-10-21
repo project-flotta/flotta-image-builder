@@ -25,7 +25,7 @@
     ```
     composer-cli sources add repo.toml
     ```
-- execute r4e-iso.sh
+- execute r4e-img-builder-iso.sh
 - test that new image is ready:
   * browse to
     ```
@@ -37,3 +37,70 @@
     - kickstart file
     - rpeo folder
     ```
+ 
+ 
+## update the image
+In the builder machine:
+- The root folder should have more than 15GB available, you can extend it by:
+  * resize the virtual machine disk before that step make sure the VM isn't running
+   ```
+     qemu-img resize <img> +15G
+   ```  
+  * run the VM and resize the root partition and the filesystem (inside the VM):
+   ```   
+     growpart /dev/sda 3
+     resize2fs /dev/sda3
+   ```
+- source specifying the repository for the packages - copy the RPM new version file to the yum repo directory that was mentioned before
+- edit `blueprint.toml` to include the new version(s) packages. example of `blueprint.toml` can be
+     ``` 
+     name = "edge-nov3-1-0"
+     description = "RHEL for Edge"
+     version = "0.0.1"
+     modules = []
+     groups = []
+     
+     [[packages]]
+     name = "yggdrasil"
+     version = "*"
+     [[packages]]
+     name = "k4e-agent"
+     version = "1.1"
+     ```
+- run r4e-img-upgrade-iso.sh which:
+  * creates a new blueprint
+  * creates a commit (by using start-ostree) 
+  * builds an upgrade image
+  * save the image as an iso file
+  Be sure 'jq' was installed before running that command  
+
+In the edge device machine:
+- update the file `/etc/ostree/remotes.d/edge.conf` to point the url of the new commit 
+- for checking there is an updated image available 
+    ``` 
+    rpm-ostree update --preview
+    ```
+- configure automate rolling upgrade by using greenboot 
+ 
+- copy the script greenboot-health-check.sh to `/etc/greenboot/check/required.d/greenboot-health-check.sh` 
+  An health check script that must not fail (if they do, GreenBoot will initiate a rollback)
+  ```
+  chmod +x /etc/greenboot/check/required.d/greenboot-health-check.sh
+  ```
+- copy the script bootfail.sh to `/etc/greenboot/red.d/bootfail.sh`
+  scripts that should be run after GreenBoot has declared the boot as failed.
+  ```
+  chmod +x /etc/greenboot/red.d/bootfail.sh
+  ```
+- for updating run
+    ```
+    rpm-ostree update
+    rpm-ostree status 
+    systemctl reboot
+   ```
+  if the greenboot would be failed after several runs greenboot would roll back automatically 
+- in order to see greenboot logs: 
+   ```
+  systemctl status greenboot-status
+   ```
+   
