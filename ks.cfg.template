@@ -9,8 +9,13 @@ text
 network --bootproto=dhcp
 user --name=core --groups=wheel --password=edge
 services --enabled=ostree-remount
-ostreesetup --nogpg --url=${REPO_URL} --osname=rhel --remote=edge --ref=rhel/8/x86_64/edge
+ostreesetup --nogpg --url=${REPO_URL} --osname=${OS_NAME} --remote=${REMOTE_OS_NAME} --ref=${REF}
 %post
+cat <<EOF > /etc/containers/containers.conf
+[engine]
+infra_image = "k8s.gcr.io/pause:3.4.1"
+EOF
+
 cat <<EOF > /etc/yggdrasil/config.toml
 log-level = "error"
 cert-file = "/etc/pki/consumer/cert.pem"

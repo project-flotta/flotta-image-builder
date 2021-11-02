@@ -11,3 +11,18 @@ version = "*"
 name = "k4e-agent"
 version = "*"
 
+[[packages]]
+name = "dmidecode"
+version = "*"
+[[packages]]
+name = "ipmitool"
+version = "*"
+[[packages]]
+name = "smartmontools"
+version = "*"
+[[packages]]
+name = "file"
+version = "*"
+[[packages]]
+name = "util-linux"
+version = "*"
