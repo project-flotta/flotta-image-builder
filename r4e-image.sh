@@ -1,18 +1,29 @@
+#!/bin/bash
 # script for creating an image that points to a certain ostree commit from web server
 # the image includes the agent RPM that communicates with server that monitors edge devices
 # at the end the following products will be available for download:
 #   - ostree image
 #   - kickstart file
 # input:
-#  - IP or hostname with port if different than 80 used for connecting to the local web server
-#  - a name for the image. allows using different ostree image for different types of edge devices
-#  - URL for connecting to the server that monitors edge devices
-#  - URL for additional packages repository
+#  - <image-server-address> - IP or hostname with port if different than 80 used for connecting to the local web server
+#  - <image-name> - a name for the image. allows using different ostree image for different types of edge devices
+#  - <agent-server-url> - URL for connecting to the server that monitors edge devices
+#  - [packages-repo-url] - optional, URL for additional packages repository
 # script assumes that files `blueprint.template` and `ks.cfg.template` are present in the working directory
+
+function cleanup() {
+    rm -f temp.out
+    rm -f $REPO_DIR
+    if [ -n "$BUILD_ID" ]; then
+        rm -f $BUILD_ID-commit.tar
+    fi
+}
+trap 'cleanup' EXIT
+
 set -e
 Usage() {
     echo "Usage:"
-    echo `basename $0` "<image-server-address> <image-name> <agent-server-url> [packages-repo-url]"
+    echo $(basename "$0") "<image-server-address> <image-name> <agent-server-url> [packages-repo-url]"
 }
 
 # check usage
@@ -33,16 +44,11 @@ BLUEPRINT_FILE=blueprint.toml
 KICKSTART_TEMPLATE=ks.cfg.template
 KICKSTART_FILE=ks.cfg
 IMAGE_BASE_URL=http://$IMAGE_HOST/$IMAGE_NAME
-KICKSTART_URL=$IMAGE_BASE_URL/$KICKSTART_FILE
 IMAGE_FOLDER=/var/www/html/$IMAGE_NAME
-
 export REPO_URL=$IMAGE_BASE_URL/repo
-export OS_NAME="rhel-edge"
-export REMOTE_OS_NAME=${OS_NAME}
-export REF="rhel/8/aarch64/edge"
 
 # make sure image does not already exist
-if [ -e $IMAGE_FOLDER ] ; then
+if [ -e "$IMAGE_FOLDER" ] ; then
     echo "$IMAGE_FOLDER already exists"
     exit 1
 fi
@@ -74,29 +80,34 @@ composer-cli blueprints push $BLUEPRINT_FILE
 # create image
 echo "creating image $IMAGE_NAME"
 composer-cli compose start $IMAGE_NAME rhel-edge-commit > temp.out
-BUILD_ID=`cat temp.out | awk '{print $2}'`
+BUILD_ID=$(awk '{print $2}' temp.out)
 echo "waiting for build $BUILD_ID to be ready..."
-while [ "`composer-cli compose status | grep $BUILD_ID | grep -c RUNNING`" != "0" ] ; do sleep 5 ; done
-if [ "`composer-cli compose status | grep $BUILD_ID | grep -c FINISHED`" == "0" ] ; then
+while [ "$(composer-cli compose status | grep $BUILD_ID | grep -c RUNNING)" != "0" ] ; do sleep 5 ; done
+if [ "$(composer-cli compose status | grep $BUILD_ID | grep -c FINISHED)" == "0" ] ; then
     echo "image composition failed"
     echo "check 'composer-cli compose status'"
     exit 1
 fi
 
 # extract image to web server folder
-echo "saving image to web folder"
+echo "saving image to web folder $IMAGE_FOLDER"
 composer-cli compose image $BUILD_ID
 sudo mkdir $IMAGE_FOLDER
 sudo tar -xvf $BUILD_ID-commit.tar -C $IMAGE_FOLDER
 
 # create kickstart file and copy to web server
+ARCH=$(uname -i)
+if [ "$ARCH" = "aarc64" ]; then
+    export OS_NAME="rhel-edge"
+    export REMOTE_OS_NAME="rhel-edge"
+    export REF="rhel/8/aarch64/edge"
+else
+    export OS_NAME="rhel"
+    export REMOTE_OS_NAME="edge"
+    export REF="rhel/8/x86_64/edge"
+fi
 echo "creating kickstart file $KICKSTART_FILE"
 envsubst < $KICKSTART_TEMPLATE > $KICKSTART_FILE
 sudo cp $KICKSTART_FILE $IMAGE_FOLDER
-
-# cleanup
-rm temp.out
-rm -f $BUILD_ID-commit.tar
-rm -f $REPO_DIR
 
 echo "Image build completed successfully"
