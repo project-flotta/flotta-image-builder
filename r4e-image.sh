@@ -9,7 +9,7 @@
 #  - <image-name> - a name for the image. allows using different ostree image for different types of edge devices
 #  - <agent-server-url> - URL for connecting to the server that monitors edge devices
 #  - [packages-repo-url] - optional, URL for additional packages repository
-# script assumes that files `blueprint.template` and `ks.cfg.template` are present in the working directory
+# script assumes that files `edgedevice-blueprint.tmpl` and `edgedevice.ks.tmpl` are present in the working directory
 
 function cleanup() {
     rm -f temp.out
@@ -39,10 +39,10 @@ export IMAGE_NAME=$2
 export AGENT_URL=$3
 
 # prepare local variables
-BLUEPRINT_TEMPLATE=blueprint.template
+BLUEPRINT_TEMPLATE=edgedevice-blueprint.tmpl
 BLUEPRINT_FILE=blueprint.toml
-KICKSTART_TEMPLATE=ks.cfg.template
-KICKSTART_FILE=ks.cfg
+KICKSTART_TEMPLATE=edgedevice.ks.tmpl
+KICKSTART_FILE=edgedevice.ks
 IMAGE_BASE_URL=http://$IMAGE_HOST/$IMAGE_NAME
 IMAGE_FOLDER=/var/www/html/$IMAGE_NAME
 export REPO_URL=$IMAGE_BASE_URL/repo
