@@ -26,7 +26,7 @@ fi
 # read input
 IMAGE_HOST=$1
 export IMAGE_NAME=$2
-export AGENT_URL=$3
+export HTTP_API=$3
 BOOT_ISO=$4
 export OS_NAME="rhel"
 export REMOTE_OS_NAME="edge"

@@ -7,12 +7,13 @@
 # input:
 #  - <image-server-address> - IP or hostname with port if different than 80 used for connecting to the local web server
 #  - <image-name> - a name for the image. allows using different ostree image for different types of edge devices
-#  - <agent-server-url> - URL for connecting to the server that monitors edge devices
+#  - <operator-http-api> - URL for connecting to the server that monitors edge devices
 #  - [packages-repo-url] - optional, URL for additional packages repository
 # script assumes that files `edgedevice-blueprint.tmpl` and `edgedevice.ks.tmpl` are present in the working directory
 
+set -e
+
 function cleanup() {
-    rm -f temp.out
     rm -f $REPO_DIR
     if [ -n "$BUILD_ID" ]; then
         rm -f $BUILD_ID-commit.tar
@@ -20,30 +21,71 @@ function cleanup() {
 }
 trap 'cleanup' EXIT
 
-set -e
-Usage() {
-    echo "Usage:"
-    echo $(basename "$0") "<image-server-address> <image-name> <agent-server-url> [packages-repo-url]"
+IMAGE_SERVER_ADDRESS=
+IMAGE_NAME=
+HTTP_API=
+PACKAGE_REPO_URL=
+VERBOSE=
+
+usage()
+{
+cat << EOF
+usage: $0 options
+This script will create an image file and serve it for download.
+OPTIONS:
+   -h      Show this message
+   -s      Image server address (required)
+   -i      Image name (required)
+   -o      Operator's HTTP API (required)
+   -p      Package repo URL (defaults to ${RAM})
+   -v      Verbose
+EOF
 }
 
-# check usage
-if [ "$#" -lt  3 ] ; then
-    echo -e "bad usage\n"
-    Usage
+while getopts "h:s:i:o:p:v" option; do
+    case "${option}"
+    in
+        h)
+            usage
+            exit 0
+            ;;
+        s) IMAGE_SERVER_ADDRESS=${OPTARG};;
+        i) IMAGE_NAME=${OPTARG};;
+        o) HTTP_API=${OPTARG};;
+        p) PACKAGE_REPO_URL=${OPTARG};;
+        v) VERBOSE=1;;
+    esac
+done
+
+if [[ -z $IMAGE_SERVER_ADDRESS ]]; then
+    echo "ERROR: Image Server address is required"
+    usage
     exit 1
 fi
 
-# read input
-IMAGE_HOST=$1
-export IMAGE_NAME=$2
-export AGENT_URL=$3
+if [[ -z $IMAGE_NAME ]]; then
+    echo "ERROR: Image name is required"
+    usage
+    exit 1
+fi
+
+if [[ -z $HTTP_API ]]; then
+    echo "ERROR: Operator's HTTP-API url is required"
+    usage
+    exit 1
+fi
+
+if [[ ! -z $VERBOSE ]]; then
+    echo "Building ${IMAGE_NAME} image for Operator's HTTP-API ${HTTP_API}"
+    set -xv
+fi
+
+# export for use in templates
+export IMAGE_NAME
+export HTTP_API
 
 # prepare local variables
-BLUEPRINT_TEMPLATE=edgedevice-blueprint.tmpl
-BLUEPRINT_FILE=blueprint.toml
-KICKSTART_TEMPLATE=edgedevice.ks.tmpl
-KICKSTART_FILE=edgedevice.ks
-IMAGE_BASE_URL=http://$IMAGE_HOST/$IMAGE_NAME
+IMAGE_BASE_URL=http://$IMAGE_SERVER_ADDRESS/$IMAGE_NAME
 IMAGE_FOLDER=/var/www/html/$IMAGE_NAME
 export REPO_URL=$IMAGE_BASE_URL/repo
 
@@ -54,7 +96,7 @@ if [ -e "$IMAGE_FOLDER" ] ; then
 fi
 
 # create source resource if rpm repository URL is provided
-if [ -n "$4" ] ; then
+if [[ ! -z $PACKAGE_REPO_URL ]] ; then
   echo "creating source agent"
   REPO_DIR=$(mktemp -d)
   cat << EOF > $REPO_DIR/repo.toml
@@ -62,7 +104,7 @@ id = "agent"
 name = "agent"
 description = "k4e agent repository"
 type = "yum-baseurl"
-url = "$4"
+url = "$PACKAGE_REPO_URL"
 check_gpg = false
 check_ssl = false
 system = false
@@ -73,31 +115,32 @@ EOF
 fi
 
 # create blueprint
-echo "creating blueprint $BLUEPRINT_FILE"
+BLUEPRINT_TEMPLATE=edgedevice-blueprint.tmpl
+BLUEPRINT_FILE=blueprint.toml
+echo "Creating blueprint $BLUEPRINT_FILE"
 envsubst < $BLUEPRINT_TEMPLATE > $BLUEPRINT_FILE
 composer-cli blueprints push $BLUEPRINT_FILE
 
 # create image
-echo "creating image $IMAGE_NAME"
-composer-cli compose start $IMAGE_NAME rhel-edge-commit > temp.out
-BUILD_ID=$(awk '{print $2}' temp.out)
+echo "Creating image $IMAGE_NAME"
+BUILD_ID=$(composer-cli -j compose start $IMAGE_NAME edge-commit | jq '.build_id')
 echo "waiting for build $BUILD_ID to be ready..."
-while [ "$(composer-cli compose status | grep $BUILD_ID | grep -c RUNNING)" != "0" ] ; do sleep 5 ; done
-if [ "$(composer-cli compose status | grep $BUILD_ID | grep -c FINISHED)" == "0" ] ; then
+while [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') == "RUNNING" ] ; do sleep 5 ; done
+if [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') != "FINISHED" ] ; then
     echo "image composition failed"
     echo "check 'composer-cli compose status'"
     exit 1
 fi
 
 # extract image to web server folder
-echo "saving image to web folder $IMAGE_FOLDER"
+echo "Saving image to web folder $IMAGE_FOLDER"
 composer-cli compose image $BUILD_ID
 sudo mkdir $IMAGE_FOLDER
-sudo tar -xvf $BUILD_ID-commit.tar -C $IMAGE_FOLDER
+sudo tar -xvf ${BUILD_ID//\"/}-commit.tar -C $IMAGE_FOLDER
 
 # create kickstart file and copy to web server
 ARCH=$(uname -i)
-if [ "$ARCH" = "aarc64" ]; then
+if [ "$ARCH" = "aarch64" ]; then
     export OS_NAME="rhel-edge"
     export REMOTE_OS_NAME="rhel-edge"
     export REF="rhel/8/aarch64/edge"
@@ -106,7 +149,10 @@ else
     export REMOTE_OS_NAME="edge"
     export REF="rhel/8/x86_64/edge"
 fi
-echo "creating kickstart file $KICKSTART_FILE"
+
+KICKSTART_TEMPLATE=edgedevice.ks.tmpl
+KICKSTART_FILE=edgedevice.ks
+echo "Creating kickstart file $KICKSTART_FILE"
 envsubst < $KICKSTART_TEMPLATE > $KICKSTART_FILE
 sudo cp $KICKSTART_FILE $IMAGE_FOLDER
 
