@@ -26,5 +26,9 @@ http-server = "${AGENT_URL}"
 EOF
 mkdir -p /etc/pki/consumer
 openssl req -new -newkey rsa:4096 -x509 -sha256 -days 365 -nodes -out /etc/pki/consumer/cert.pem -keyout /etc/pki/consumer/key.pem -subj /CN=k4e-agent
+systemctl disable --now firewalld.service
+systemctl enable --now nftables.service
+systemctl enable --now podman.service
+systemctl enable --now podman.socket
 systemctl enable --now yggdrasild.service
 %end
