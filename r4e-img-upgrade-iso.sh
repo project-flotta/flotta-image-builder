@@ -3,13 +3,13 @@
 # at the end an upgraded ostree image will be available
 # input:
 #  - original-image-name that was chosen for the first step (Build ISO for edge devices)
-#  - parrent-ostree-commit can be found in the original image webserver under in compose.json file under the key 'ostree-commit'
+#  - parent-ostree-commit can be found in the original image webserver under in compose.json file under the key 'ostree-commit'
 #  - image-version-number the new version of the image
 # script assumes that file `blueprint.toml` is present and updated in the working directory and also that jq already install
 set -e
 Usage() {
     echo "Usage:"
-    echo `basename $0` "<original-image-name> <parrent-ostree-commit> <image-version-number>"
+    echo `basename $0` "<original-image-name> <parent-ostree-commit> <image-version-number>"
 }
 
 # check usage
@@ -39,8 +39,8 @@ echo "validating blueprint $BLUEPRINT_NAME"
 composer-cli blueprints depsolve $BLUEPRINT_NAME
 
 # build image using the composer based on the parent commit create a new commit- first find the parent commit hash in http://<host-ip>/<image-name>/compose.json under "ostree-commit"
-echo "creating a new commit from parrent $OSTREE_COMMIT using blueprint $BLUEPRINT_NAME"
-BUILD_ID=$(composer-cli -j compose start-ostree $BLUEPRINT_NAME rhel-edge-commit --parent $OSTREE_COMMIT| jq '.build_id'| tr -d '"')
+echo "creating a new commit from parent $OSTREE_COMMIT using blueprint $BLUEPRINT_NAME"
+BUILD_ID=$(composer-cli -j compose start-ostree $BLUEPRINT_NAME rhel-edge-commit --parent $OSTREE_COMMIT| jq '.build_id')
 echo "waiting for build $BUILD_ID to be ready..."
 while [ "$(composer-cli -j compose status | jq -r '.[] | select( .id == '$BUILD_ID' ).status')" == "RUNNING" ] ; do sleep 5 ; done
 if [ "$(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status')" != "FINISHED" ] ; then
@@ -53,5 +53,5 @@ fi
 echo "saving the new image to the web folder $IMAGE_FOLDER"
 composer-cli compose image $BUILD_ID
 sudo mkdir $IMAGE_FOLDER
-sudo tar -xvf $BUILD_ID-commit.tar -C $IMAGE_FOLDER
+sudo tar -xvf ${BUILD_ID//\"/}-commit.tar -C $IMAGE_FOLDER
 rm -f $BUILD_ID-commit.tar
