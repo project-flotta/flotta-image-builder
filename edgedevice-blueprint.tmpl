@@ -7,6 +7,7 @@ groups = []
 [[packages]]
 name = "yggdrasil"
 version = "*"
+
 [[packages]]
 name = "k4e-agent"
 version = "*"
@@ -14,15 +15,23 @@ version = "*"
 [[packages]]
 name = "dmidecode"
 version = "*"
+
 [[packages]]
 name = "ipmitool"
 version = "*"
+
 [[packages]]
 name = "smartmontools"
 version = "*"
+
 [[packages]]
 name = "file"
 version = "*"
+
 [[packages]]
 name = "util-linux"
 version = "*"
+
+[customizations.services]
+enabled = ["nftables", "podman.socket", "podman"]
+disabled = ["firewalld"]

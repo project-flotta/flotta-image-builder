@@ -35,7 +35,7 @@
     ```
     - ISO file
     - kickstart file
-    - rpeo folder
+    - repo folder
     ```
  
  

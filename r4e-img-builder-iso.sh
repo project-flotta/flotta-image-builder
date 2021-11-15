@@ -9,7 +9,7 @@
 #  - a name for the image. allows using different ISO and ostree image for different types of edge devices
 #  - URL for connecting to the server that monitors edge devices
 #  - path to boot ISO file
-# script assumes that files `blueprint.template` and `ks.cfg.template` are present in the working directory
+# script assumes that files `edgedevice-blueprint.tmpl` and `edgedevice.ks.tmpl` are present in the working directory
 set -e
 Usage() {
     echo "Usage:"
@@ -26,7 +26,7 @@ fi
 # read input
 IMAGE_HOST=$1
 export IMAGE_NAME=$2
-export AGENT_URL=$3
+export HTTP_API=$3
 BOOT_ISO=$4
 export OS_NAME="rhel"
 export REMOTE_OS_NAME="edge"
@@ -34,10 +34,10 @@ export REF="rhel/8/x86_64/edge"
 
 # prepare local variables
 IMAGE_BASE_URL=http://$IMAGE_HOST/$IMAGE_NAME
-BLUEPRINT_TEMPLATE=blueprint.template
+BLUEPRINT_TEMPLATE=edgedevice-blueprint.tmpl
 BLUEPRINT_FILE=blueprint.toml
-KICKSTART_TEMPLATE=ks.cfg.template
-KICKSTART_FILE=ks.cfg
+KICKSTART_TEMPLATE=edgedevice.ks.tmpl
+KICKSTART_FILE=edgedevice.ks
 KICKSTART_URL=$IMAGE_BASE_URL/$KICKSTART_FILE
 export REPO_URL=$IMAGE_BASE_URL/repo
 IMAGE_FOLDER=/var/www/html/$IMAGE_NAME
