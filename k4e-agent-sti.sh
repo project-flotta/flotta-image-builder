@@ -67,9 +67,17 @@ if ! subscription-manager refresh; then
 fi
 
 #---------------------------------
+# Cleanup before running
+#---------------------------------
+rm -rf ~/rpmbuild/*
+rm -rf /home/builder
+rm -rf /var/www/html/k4e-repo
+rm -rf /var/www/html/$IMAGE_NAME
+
+#---------------------------------
 # Install image-builder components
 #---------------------------------
-dnf install -y osbuild-composer composer-cli cockpit-composer bash-completion jq
+dnf install -y osbuild-composer composer-cli cockpit-composer bash-completion jq firewalld
 systemctl enable osbuild-composer.socket --now
 systemctl enable cockpit.socket --now
 systemctl start firewalld
@@ -80,7 +88,7 @@ source  /etc/bash_completion.d/composer-cli
 # Build packages for k4e from source
 #-----------------------------------
 mkdir -p /home/builder
-dnf install -y dbus-devel systemd-devel git golang rpm-build
+dnf install -y dbus-devel systemd-devel git golang rpm-build make
 rm -rf ~/rpmbuild/*
 
 # Build yggdrasil rpm
