@@ -116,6 +116,12 @@ else
     make rpm
 fi
 
+# Build Prometheus node_exporter rpm
+git clone https://github.com/jakub-dzon/prometheus-node_exporter-rpm.git /home/builder/prometheus-node_exporter-rpm
+cd /home/builder/prometheus-node_exporter-rpm
+make rpm
+
+
 #---------------------------
 # Create packages repository
 #---------------------------

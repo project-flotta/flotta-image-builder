@@ -32,6 +32,10 @@ version = "*"
 name = "util-linux"
 version = "*"
 
+[[packages]]
+name = "node_exporter"
+version = "*"
+
 [customizations.services]
-enabled = ["nftables", "podman.socket", "podman"]
+enabled = ["nftables", "podman.socket", "podman", "node_exporter"]
 disabled = ["firewalld"]
