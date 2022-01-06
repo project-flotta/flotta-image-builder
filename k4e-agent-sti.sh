@@ -20,25 +20,44 @@ usage: $0 options
 This script will create an image file and ISO to be served for download.
 OPTIONS:
    -h      Show this message
+   -a      Image server address
    -i      Image name (required)
    -o      Operator's HTTP API (required)
    -v      Verbose
 EOF
 }
 
-while getopts "h:i:o:v" option; do
+while getopts "h:a:i:o:v" option; do
     case "${option}"
     in
         h)
             usage
             exit 0
             ;;
+        a) IMAGE_SERVER_ADDRESS=${OPTARG};;
         i) IMAGE_NAME=${OPTARG};;
         o) HTTP_API=${OPTARG};;
         v) VERBOSE=1;;
     esac
 done
 
+dnf install -y bind-utils
+if [[ -z $IMAGE_SERVER_ADDRESS ]]; then
+    hostname_output=$(host $(hostname))
+    for word in $hostname_output
+    do
+      if [[ ($word =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$)  && ($word != "127.0.0.1")]]; then
+        echo "found hostname"
+        IMAGE_SERVER_ADDRESS=$word
+        break
+      fi
+    done
+    if [[ -z $IMAGE_SERVER_ADDRESS ]]; then
+      echo "ERROR: server address is required"
+      usage
+      exit 1
+    fi
+fi
 if [[ -z $IMAGE_NAME ]]; then
     echo "ERROR: Image name is required"
     usage
@@ -139,7 +158,7 @@ createrepo /var/www/html/k4e-repo/
 #-----------------------------------
 git clone https://github.com/ydayagi/r4e.git /home/builder/r4e
 cd /home/builder/r4e
-./r4e-image.sh -s $(hostname) -i $IMAGE_NAME -o $HTTP_API -p http://$(hostname)/k4e-repo/
+./r4e-image.sh -s $IMAGE_SERVER_ADDRESS -i $IMAGE_NAME -o $HTTP_API -p http://$IMAGE_SERVER_ADDRESS/k4e-repo/
 
 #----------------------------------------
 # Create ISO for image and serve via http
@@ -162,7 +181,7 @@ fi
 #-------------------------
 dnf install -y jq isomd5sum genisoimage
 composer-cli blueprints push $ISO_BLUEPRINT
-BUILD_ID=$(composer-cli -j compose start-ostree --ref $REF --url http://$(hostname)/$IMAGE_NAME/repo/ edgedevice-iso edge-installer | jq '.build_id')
+BUILD_ID=$(composer-cli -j compose start-ostree --ref $REF --url http://$IMAGE_SERVER_ADDRESS/$IMAGE_NAME/repo/ edgedevice-iso edge-installer | jq '.build_id')
 echo "waiting for build $BUILD_ID to be ready..."
 while [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') == "RUNNING" ] ; do sleep 5 ; done
 if [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') != "FINISHED" ] ; then
