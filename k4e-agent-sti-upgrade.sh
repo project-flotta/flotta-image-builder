@@ -6,7 +6,7 @@ set -e
 # * Create new rpms for yggdrasil, k4e-device-worker and Prometheus node_exporter
 # * Publish rpms as yum repo to be consumed by image-builder
 # * Publish rhel4edge image commit for edge-device
-# * ./k4e-agent-sti-upgrade.sh -a <server_adress> -i <image_name> -o <operator_host_name:operator_port> -v
+# * ./k4e-agent-sti-upgrade.sh -a <server_adress> -i <image_name> -o <operator_host_name:operator_port> -p <parent_commit> -v
 
 IMAGE_SERVER_ADDRESS=
 IMAGE_NAME=
@@ -14,6 +14,7 @@ HTTP_API=
 K4E_GITHUB_ORG=
 K4E_GITHUB_BRANCH=
 VERBOSE=
+OSTREE_COMMIT=
 SUFFIX=$(date +%s)
 
 usage()
@@ -26,13 +27,14 @@ OPTIONS:
    -a      Image server address
    -i      Original Image name(required)
    -o      Operator's HTTP API (required)
+   -p      Ostree parent commit(required)
    -g      GitHub organization for k4e-device-worker repo (optional)
    -b      GitHub branch name for k4e-device-worker repo (optional)
    -v      Verbose
 EOF
 }
 
-while getopts "h:a:i:o:v:g" option; do
+while getopts "h:a:i:o:p:g:b:v" option; do
     case "${option}"
     in
         h)
@@ -42,8 +44,9 @@ while getopts "h:a:i:o:v:g" option; do
         a) IMAGE_SERVER_ADDRESS=${OPTARG};;
         i) IMAGE_NAME=${OPTARG};;
         o) HTTP_API=${OPTARG};;
+        p) OSTREE_COMMIT=${OPTARG};;
         g) K4E_GITHUB_ORG=${OPTARG};;
-        g) K4E_GITHUB_BRANCH=${OPTARG};;
+        b) K4E_GITHUB_BRANCH=${OPTARG};;
         v) VERBOSE=1;;
     esac
 done
@@ -73,6 +76,11 @@ fi
 
 if [[ -z $HTTP_API ]]; then
     echo "ERROR: Operator's HTTP-API url is required"
+    usage
+    exit 1
+fi
+if [[ -z $OSTREE_COMMIT ]]; then
+    echo "ERROR: Ostree parent commit is required"
     usage
     exit 1
 fi
@@ -189,7 +197,7 @@ composer-cli blueprints depsolve $BLUEPRINT_NAME
 # create an image commit
 #-----------------------------------
 echo "Creating image $IMAGE_NAME"
-BUILD_ID=$(composer-cli -j compose start $IMAGE_NAME edge-commit | jq '.build_id')
+BUILD_ID=$(composer-cli -j compose start-ostree $BLUEPRINT_NAME edge-commit --parent $OSTREE_COMMIT  | jq '.build_id')
 echo "waiting for build $BUILD_ID to be ready..."
 while [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') == "RUNNING" ] ; do sleep 5 ; done
 if [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') != "FINISHED" ] ; then
