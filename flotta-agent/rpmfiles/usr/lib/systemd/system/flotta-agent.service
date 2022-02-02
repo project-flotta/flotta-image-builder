@@ -1,5 +1,5 @@
 [Unit]
-Description=k4e-agent
+Description=flotta-agent
 Requires=podman.socket nftables.service
 After=podman.socket nftables.service
 StartLimitIntervalSec=0

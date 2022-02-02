@@ -4,7 +4,7 @@ set -e
 
 # The script performs the following steps on rhel-8.5:
 # * Install image-builder
-# * Create rpms for yggdrasil and k4e-device-worker
+# * Create rpms for yggdrasil and flotta-device-worker
 # * Publish rpms as yum repo to be consumed by image-builder
 # * Publish rhel4edge image for edge-device
 
@@ -90,7 +90,7 @@ fi
 #---------------------------------
 rm -rf ~/rpmbuild/*
 rm -rf /home/builder
-rm -rf /var/www/html/k4e-repo
+rm -rf /var/www/html/flotta-repo
 rm -rf /var/www/html/$IMAGE_NAME
 
 #---------------------------------
@@ -104,7 +104,7 @@ firewall-cmd --add-service=cockpit && firewall-cmd --add-service=cockpit --perma
 source  /etc/bash_completion.d/composer-cli
 
 #-----------------------------------
-# Build packages for k4e from source
+# Build packages for Flotta from source
 #-----------------------------------
 mkdir -p /home/builder
 dnf install -y dbus-devel systemd-devel git golang rpm-build make
@@ -124,9 +124,9 @@ if [ "$ARCH" = "aarch64" ]; then
 fi
 rpmbuild -bb ~/rpmbuild/SPECS/yggdrasil.spec --target $ARCH
 
-# Build k4e-device-worker rpm
-git clone https://github.com/jakub-dzon/k4e-device-worker.git /home/builder/k4e-device-worker
-cd /home/builder/k4e-device-worker
+# Build flotta-device-worker rpm
+git clone https://github.com/project-flotta/flotta-device-worker.git /home/builder/flotta-device-worker
+cd /home/builder/flotta-device-worker
 if [ "$ARCH" = "aarch64" ]; then
     make build-arm64
     make rpm-arm64
@@ -136,7 +136,7 @@ else
 fi
 
 # Build Prometheus node_exporter rpm
-git clone https://github.com/jakub-dzon/prometheus-node_exporter-rpm.git /home/builder/prometheus-node_exporter-rpm
+git clone https://github.com/project-flotta/prometheus-node_exporter-rpm.git /home/builder/prometheus-node_exporter-rpm
 cd /home/builder/prometheus-node_exporter-rpm
 make rpm
 
@@ -149,16 +149,16 @@ systemctl enable --now httpd
 firewall-cmd --zone=public --add-port=80/tcp --permanent
 firewall-cmd --reload
 
-mkdir /var/www/html/k4e-repo
-cp /root/rpmbuild/RPMS/${ARCH}/*.${ARCH}.rpm /var/www/html/k4e-repo/
-createrepo /var/www/html/k4e-repo/
+mkdir /var/www/html/flotta-repo
+cp /root/rpmbuild/RPMS/${ARCH}/*.${ARCH}.rpm /var/www/html/flotta-repo/
+createrepo /var/www/html/flotta-repo/
 
 #-----------------------------------
 # Create and publish rhel4edge image
 #-----------------------------------
-git clone https://github.com/ydayagi/r4e.git /home/builder/r4e
+git clone https://github.com/project-flotta/flotta-image-builder.git /home/builder/r4e
 cd /home/builder/r4e
-./r4e-image.sh -s $IMAGE_SERVER_ADDRESS -i $IMAGE_NAME -o $HTTP_API -p http://$IMAGE_SERVER_ADDRESS/k4e-repo/
+./r4e-image.sh -s $IMAGE_SERVER_ADDRESS -i $IMAGE_NAME -o $HTTP_API -p http://$IMAGE_SERVER_ADDRESS/flotta-repo/
 
 #----------------------------------------
 # Create ISO for image and serve via http
