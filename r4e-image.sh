@@ -102,7 +102,7 @@ if [[ ! -z $PACKAGE_REPO_URL ]] ; then
   cat << EOF > $REPO_DIR/repo.toml
 id = "agent"
 name = "agent"
-description = "k4e agent repository"
+description = "Flotta agent repository"
 type = "yum-baseurl"
 url = "$PACKAGE_REPO_URL"
 check_gpg = false
