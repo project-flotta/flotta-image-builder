@@ -156,7 +156,7 @@ createrepo /var/www/html/flotta-repo/
 #-----------------------------------
 # Create and publish rhel4edge image
 #-----------------------------------
-git clone https://github.com/ydayagi/r4e.git /home/builder/r4e
+git clone https://github.com/project-flotta/flotta-image-builder.git /home/builder/r4e
 cd /home/builder/r4e
 ./r4e-image.sh -s $IMAGE_SERVER_ADDRESS -i $IMAGE_NAME -o $HTTP_API -p http://$IMAGE_SERVER_ADDRESS/flotta-repo/
 
