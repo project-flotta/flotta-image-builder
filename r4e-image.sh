@@ -1,4 +1,6 @@
 #!/bin/bash
+
+source  ./flotta-image-builder-common-functions.sh
 # script for creating an image that points to a certain ostree commit from web server
 # the image includes the agent RPM that communicates with server that monitors edge devices
 # at the end the following products will be available for download:
@@ -97,21 +99,7 @@ fi
 
 # create source resource if rpm repository URL is provided
 if [[ ! -z $PACKAGE_REPO_URL ]] ; then
-  echo "creating source agent"
-  REPO_DIR=$(mktemp -d)
-  cat << EOF > $REPO_DIR/repo.toml
-id = "agent"
-name = "agent"
-description = "Flotta agent repository"
-type = "yum-baseurl"
-url = "$PACKAGE_REPO_URL"
-check_gpg = false
-check_ssl = false
-system = false
-EOF
-
-  composer-cli sources add $REPO_DIR/repo.toml
-  rm -rf $REPO_DIR
+  create_source "agent" "$PACKAGE_REPO_URL"
 fi
 
 # create blueprint
@@ -124,36 +112,11 @@ composer-cli blueprints push $BLUEPRINT_FILE
 # create image
 echo "Creating image $IMAGE_NAME"
 BUILD_ID=$(composer-cli -j compose start $IMAGE_NAME edge-commit | jq '.build_id')
-echo "waiting for build $BUILD_ID to be ready..."
-while [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') == "RUNNING" ] ; do sleep 5 ; done
-if [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') != "FINISHED" ] ; then
-    echo "image composition failed"
-    echo "check 'composer-cli compose status'"
-    exit 1
-fi
+waiting_for_build_to_be_ready $BUILD_ID
 
 # extract image to web server folder
-echo "Saving image to web folder $IMAGE_FOLDER"
-composer-cli compose image $BUILD_ID
-sudo mkdir $IMAGE_FOLDER
-sudo tar -xvf ${BUILD_ID//\"/}-commit.tar -C $IMAGE_FOLDER
+extract_image_to_web_server $BUILD_ID $IMAGE_FOLDER
 
 # create kickstart file and copy to web server
-ARCH=$(uname -i)
-if [ "$ARCH" = "aarch64" ]; then
-    export OS_NAME="rhel-edge"
-    export REMOTE_OS_NAME="rhel-edge"
-    export REF="rhel/8/aarch64/edge"
-else
-    export OS_NAME="rhel"
-    export REMOTE_OS_NAME="edge"
-    export REF="rhel/8/x86_64/edge"
-fi
+create_kickstart_file $IMAGE_FOLDER
 
-KICKSTART_TEMPLATE=edgedevice.ks.tmpl
-KICKSTART_FILE=edgedevice.ks
-echo "Creating kickstart file $KICKSTART_FILE"
-envsubst < $KICKSTART_TEMPLATE > $KICKSTART_FILE
-sudo cp $KICKSTART_FILE $IMAGE_FOLDER
-
-echo "Image build completed successfully"
