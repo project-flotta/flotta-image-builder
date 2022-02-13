@@ -52,6 +52,8 @@ validates_input_parametes(){
 }
 
 build_packages(){
+  mkdir -p /home/builder
+  dnf install -y dbus-devel systemd-devel git golang rpm-build make
   rm -rf ~/rpmbuild/*
 
   # Build yggdrasil rpm
