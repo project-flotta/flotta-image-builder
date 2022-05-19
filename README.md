@@ -1,6 +1,6 @@
 # RHEL for edge
 ## Build ISO for edge devices
-- prepare host with RHEL8.5+ - 2 CPUs, 4GB memory and 20GB of storage. It may be a VM, CNV VM or physical appliance. Web server running must be reachable by edge devices.
+- prepare host with RHEL8.6+ - 2 CPUs, 4GB memory and 20GB of storage. It may be a VM, CNV VM or physical appliance. Web server running must be reachable by edge devices.
 - The root folder should have more than 15GB available, you can extend it by:
   * resize the virtual machine disk before that step make sure the VM isn't running
    ```
