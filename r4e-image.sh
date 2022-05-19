@@ -111,7 +111,7 @@ composer-cli blueprints push $BLUEPRINT_FILE
 
 # create image
 echo "Creating image $IMAGE_NAME"
-BUILD_ID=$(composer-cli -j compose start $IMAGE_NAME edge-commit | jq '.build_id')
+BUILD_ID=$(composer-cli -j compose start $IMAGE_NAME edge-commit | jq -r '.body.build_id')
 waiting_for_build_to_be_ready $BUILD_ID
 
 # extract image to web server folder

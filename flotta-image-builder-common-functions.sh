@@ -182,7 +182,7 @@ EOF
   # Save image in ISO format
   dnf install -y jq isomd5sum genisoimage
   composer-cli blueprints push $ISO_BLUEPRINT
-  BUILD_ID=$(composer-cli -j compose start-ostree --ref $REF --url http://$IMAGE_SERVER_ADDRESS/$IMAGE_NAME/repo/ edgedevice-iso edge-installer | jq '.build_id')
+  BUILD_ID=$(composer-cli -j compose start-ostree --ref $REF --url http://$IMAGE_SERVER_ADDRESS/$IMAGE_NAME/repo/ edgedevice-iso edge-installer | jq -r '.body.build_id')
   waiting_for_build_to_be_ready $BUILD_ID
 
   composer-cli compose image $BUILD_ID
@@ -228,8 +228,8 @@ waiting_for_build_to_be_ready(){
   BUILD_ID=$1
 
   echo "waiting for build $BUILD_ID to be ready..."
-  while [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') == "RUNNING" ] ; do sleep 5 ; done
-  if [ $(composer-cli -j compose status  | jq -r '.[] | select( .id == '$BUILD_ID' ).status') != "FINISHED" ] ; then
+  while [ $(composer-cli -j compose info $BUILD_ID |jq -r '.body.queue_status') == "RUNNING" ] ; do sleep 5 ; done
+  if [ $(composer-cli -j compose info $BUILD_ID |jq -r '.body.queue_status') != "FINISHED" ] ; then
       echo "image composition failed"
       echo "check 'composer-cli compose status'"
       exit 1
